@@ -16,13 +16,24 @@
 #           note on scoring matrix indeces:
 #           scoring matrix is build upon the understanding that 0=a, 1=b, 2=c, etc.
 #           formula: ord('a')-97
+#
+#
+#           EDIT: 
+#           fixed substitution matrix so it follows the algo described in the paper and on https://rob-p.github.io/CSE549F17/lectures/Lec10.pdf
+#           Now the diagonals have positive numbers and positives are possible in other places
+#           
+#           Algo summary:
+#           score(ab) = 1/lambda * log2(q(ab)/e(ab))
+#           lambda = .5
+#           q(ab) = sum of a-b pairs / sum of all possible pairs
+#           e(ab) = p(a)^2 if a=b or 2*p(a)*p(b)
+#           p(a) = q(aa) + sum of all q(aX) where a!=X and X is every letter
 # ----------
 
 import math
 
 filename = "DataFile1-1.txt"
 # create empty scoring matrix
-scoring_matrix = [[0 for j in range(0,26)] for i in range(0,26)]
 
 def open_read_file():
     """
@@ -38,13 +49,13 @@ def open_read_file():
         for i in range(0,len(seq)):
             seq[i] = seq[i][:-1]
         
-        # read first 20 lines in
+        # # read first 20 lines in
         # for i in range(0,20):
         #     seq.append(f.readline())
         #     seq[i] = seq[i][:-1]
     return seq
 
-def print_matrix(matrix, gap=3, headers=True):
+def print_matrix(matrix, gap=3, headers=True, isFloat=False):
     """
     Prints a matrix (probably the scoring matrix), in a human readable 
     format. Will print headers on the top and on the sides.
@@ -65,46 +76,11 @@ def print_matrix(matrix, gap=3, headers=True):
         if headers:
             print(f'{chr(i+97):>{gap}}', end='')
         for j in range(0, len(matrix)):
-            print(f'{matrix[i][j]:{gap}}', end='')
+            if isFloat:
+                print(f'{matrix[i][j]:{gap+1}.3f}', end='')
+            else:
+                print(f'{matrix[i][j]:{gap}}', end='')
         print()
-
-def col_by_col_score(seq):
-    """
-    Function to assign a score to each possible pair based on the given list of sequences.
-
-    The scoring algorithm is the same as is in Chapter 2 of our book.
-    For each column, the actual pairs are divided by the possible number of pairs. Then the 
-    logarithmic function is applied to normalize the scores.
-    The log odds probability for each column is then summed together to get the final score.
-
-    :param seq: list of sequences
-    """
-    global scoring_matrix
-    temp_scoring = [[0 for i in range(0,26)] for j in range(0,26)]
-
-    # for each column
-    for i in range(0, len(seq[0])):
-        # count pairs
-        for j in range(0,len(seq)): # row
-            for k in range(j+1, len(seq)): # row
-                # put character into index for matrix
-                x = ord(seq[j][i])-97
-                y = ord(seq[k][i])-97
-
-                # count each occurance of pair
-                temp_scoring[x][y] += 1
-                temp_scoring[y][x] += 1
-        
-        total = 25*26/2
-        # divide each count by total possible then add score to scoring matrix
-        # reset temp matrix when done
-        for j in range(0,len(temp_scoring[0])):
-            for k in range(0,len(temp_scoring)):
-                if temp_scoring[j][k] != 0:
-                    temp_scoring[j][k] /= total
-                    scoring_matrix[j][k] += int(math.log(temp_scoring[j][k]))
-
-                    temp_scoring[j][k] = 0
 
 def save_scoring_matrix(filename):
     """
@@ -120,8 +96,69 @@ def save_scoring_matrix(filename):
                 f.write(f'{scoring_matrix[i][j]},')
             f.write('\n')
 
+def create_scoring_matrix(seq):
+    """
+    Better function to create a scoring matrix like the BLOSUM50. See formula at top of file for description. 
+    Based on given sequences.
+
+    :param seq: list of sequences to construct matrix
+    :return: scoring matrix
+    """
+    score_matrix = [[0 for j in range(0,26)] for i in range(0,26)]
+
+    # count pairs in sequence list
+    for i in range(0, len(seq[0])):
+        for j in range(0, len(seq)):
+            for k in range(j+1, len(seq)):
+                # change current letters into indexes for scoring table
+                indexi = ord(seq[j][i])-97
+                indexk = ord(seq[k][i])-97
+
+                # count occurance of pair
+                score_matrix[indexi][indexk] += 1
+                score_matrix[indexk][indexi] += 1
+    
+    total_pos_pairs = (len(seq)-1) * len(seq) /2 * len(seq[0])
+
+    # divide every count by total possible pairs
+    for i in range(0, len(score_matrix[0])):
+        for j in range(0, len(score_matrix)):
+            score_matrix[i][j] /= total_pos_pairs
+
+    # create probabilities for each letter
+    probabilities = [0 for i in range(0,26)]
+    for i in range(0, len(probabilities)):
+        probabilities[i] = score_matrix[i][i]
+
+        j = 0
+        while j != i:
+            probabilities[i] += score_matrix[j][i]
+            j += 1
+
+    # get expected probabilities
+    exp_prob = [[0 for j in range(0,26)] for i in range(0,26)]
+    for i in range(0, len(exp_prob[0])):
+        for j in range(0, len(exp_prob)):
+            if i == j:
+                exp_prob[i][j] = probabilities[i]*probabilities[i]
+            else:
+                exp_prob[i][j] = 2 * probabilities[i] * probabilities[j]
+                exp_prob[j][i] = exp_prob[i][j]
+
+    # get actual scores
+    for i in range(0, len(score_matrix[0])):
+        for j in range(0, len(score_matrix)):
+
+            if exp_prob[i][j] == 0 or score_matrix[i][j] == 0:
+                score_matrix[i][j] = 0
+            else:
+                score_matrix[i][j] = round(2 * math.log( (score_matrix[i][j]/exp_prob[i][j]) , 2))
+    
+    return score_matrix
+
+# ------ main ----------
 seq = open_read_file()
-col_by_col_score(seq)
+scoring_matrix = create_scoring_matrix(seq)
 print_matrix(scoring_matrix, 4)
-# save_scoring_matrix("all_sequence_scores.csv")
+# save_scoring_matrix("real_all.csv")
 
