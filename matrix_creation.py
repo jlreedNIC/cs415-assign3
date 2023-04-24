@@ -96,6 +96,43 @@ def save_scoring_matrix(filename):
                 f.write(f'{scoring_matrix[i][j]},')
             f.write('\n')
 
+def create_probabilities(score_matrix):
+    """
+    helper function that creates the probabilites for each letter for the sequences. 
+    needs scoring matrix after all counts have been totaled and divided by total possible pairs
+
+    :param score_matrix: matrix
+    :return: list of probabilities
+    """
+    # create probabilities for each letter
+    probabilities = [0 for i in range(0,26)]
+    for i in range(0, len(probabilities)):
+        probabilities[i] = score_matrix[i][i]
+
+        j = 0
+        while j != i:
+            probabilities[i] += score_matrix[j][i]
+            j += 1
+    return probabilities
+
+def exp_pair_probabilities(probabilities):
+    """
+    turn probabilities for each letter into probabilities for each pair of letters
+
+    :param probabilities: list of probabilities
+    :return: matrix for each pair
+    """
+    # get expected probabilities
+    exp_prob = [[0 for j in range(0,26)] for i in range(0,26)]
+    for i in range(0, len(exp_prob[0])):
+        for j in range(0, len(exp_prob)):
+            if i == j:
+                exp_prob[i][j] = probabilities[i]*probabilities[i]
+            else:
+                exp_prob[i][j] = 2 * probabilities[i] * probabilities[j]
+                exp_prob[j][i] = exp_prob[i][j]
+    return exp_prob
+
 def create_scoring_matrix(seq):
     """
     Better function to create a scoring matrix like the BLOSUM50. See formula at top of file for description. 
@@ -125,25 +162,9 @@ def create_scoring_matrix(seq):
         for j in range(0, len(score_matrix)):
             score_matrix[i][j] /= total_pos_pairs
 
-    # create probabilities for each letter
-    probabilities = [0 for i in range(0,26)]
-    for i in range(0, len(probabilities)):
-        probabilities[i] = score_matrix[i][i]
+    probabilities = create_probabilities(score_matrix)
 
-        j = 0
-        while j != i:
-            probabilities[i] += score_matrix[j][i]
-            j += 1
-
-    # get expected probabilities
-    exp_prob = [[0 for j in range(0,26)] for i in range(0,26)]
-    for i in range(0, len(exp_prob[0])):
-        for j in range(0, len(exp_prob)):
-            if i == j:
-                exp_prob[i][j] = probabilities[i]*probabilities[i]
-            else:
-                exp_prob[i][j] = 2 * probabilities[i] * probabilities[j]
-                exp_prob[j][i] = exp_prob[i][j]
+    exp_prob = exp_pair_probabilities(probabilities)
 
     # get actual scores
     for i in range(0, len(score_matrix[0])):
@@ -161,4 +182,3 @@ seq = open_read_file()
 scoring_matrix = create_scoring_matrix(seq)
 print_matrix(scoring_matrix, 4)
 # save_scoring_matrix("real_all.csv")
-
