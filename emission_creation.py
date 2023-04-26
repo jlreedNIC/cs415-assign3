@@ -105,13 +105,36 @@ def save_emission_tables(filename, state0_emit, state1_emit, state2_emit):
             f.write(f'{state2_emit[i]},')
         f.write('\n')
 
-aminos, states = open_read_file()
-# print(aminos)
-# print('\n', states)
+def create_transition_prob(genome_state):
+    transition = [[0 for i in range(0, 3)] for j in range(0,3)]
 
-state0, state1, state2 = create_emissions(aminos, states)
-# print(f'state0: {state0}\n')
-# print(f'state1: {state1}\n')
-# print(f'state2: {state2}\n')
+    for i in range(0, len(genome_state)):
+        for j in range(0, len(genome_state[0])-1):
+            transition[genome_state[i][j]][genome_state[i][j+1]] += 1
+    
+    for i in range(0, len(transition)):
+        sum = 0
+        for j in range(0, len(transition[0])):
+            sum += transition[i][j]
+        
+        for j in range(0, len(transition[0])):
+            transition[i][j] = round(transition[i][j]/sum, 5)
+
+    return transition
+
+def save_transition_table(filename, transition):
+    with open(filename, "w") as f:
+        for i in range(0, len(transition)):
+            for j in range(0, len(transition[0])):
+                f.write(f'{transition[i][j]},')
+            f.write('\n')
+
+
+aminos, states = open_read_file()
+
+t = create_transition_prob(states)
+save_transition_table("transitions.csv", t)
+
+# state0, state1, state2 = create_emissions(aminos, states)
 
 # save_emission_tables("emissions.csv", state0, state1, state2)
