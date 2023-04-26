@@ -4,6 +4,9 @@
 # @author   Jordan Reed
 # @class    CS415 Computational Biology
 # @brief    This file will create emissions tables
+#
+#           count for each state (0,1,2) what amino is emitted
+#           divide each amino count by the total amount for that state
 # ----------
 
 filename = "DataFile2.txt"
@@ -79,11 +82,36 @@ def create_emissions(amino_seq, state_seq):
 
     return state0_emit, state1_emit, state2_emit
 
+def save_emission_tables(filename, state0_emit, state1_emit, state2_emit):
+    """
+    Function that saves the emission tables to the given file in a csv format, with headers
+
+    :param filename: file in which to save the data
+    """
+
+    with open(filename, "w") as f:
+        f.write('state_0,')
+        for i in range(0, len(state0_emit)):
+            f.write(f'{state0_emit[i]},')
+        f.write('\n')
+
+        f.write('state_1,')
+        for i in range(0, len(state1_emit)):
+            f.write(f'{state1_emit[i]},')
+        f.write('\n')
+
+        f.write('state_2,')
+        for i in range(0, len(state2_emit)):
+            f.write(f'{state2_emit[i]},')
+        f.write('\n')
+
 aminos, states = open_read_file()
 # print(aminos)
 # print('\n', states)
 
 state0, state1, state2 = create_emissions(aminos, states)
-print(f'state0: {state0}\n')
-print(f'state1: {state1}\n')
-print(f'state2: {state2}\n')
+# print(f'state0: {state0}\n')
+# print(f'state1: {state1}\n')
+# print(f'state2: {state2}\n')
+
+# save_emission_tables("emissions.csv", state0, state1, state2)
