@@ -44,15 +44,15 @@ def open_read_file():
     seq = []
 
     with open(filename, "r") as f:
-        # read entire file in
-        seq = f.readlines()
-        for i in range(0,len(seq)):
-            seq[i] = seq[i][:-1]
-        
-        # # read first 20 lines in
-        # for i in range(0,20):
-        #     seq.append(f.readline())
+        # # read entire file in
+        # seq = f.readlines()
+        # for i in range(0,len(seq)):
         #     seq[i] = seq[i][:-1]
+        
+        # read first 20 lines in
+        for i in range(0,160):
+            seq.append(f.readline())
+            seq[i] = seq[i][:-1]
     return seq
 
 def print_matrix(matrix, gap=3, headers=True, isFloat=False):
@@ -182,3 +182,4 @@ seq = open_read_file()
 scoring_matrix = create_scoring_matrix(seq)
 print_matrix(scoring_matrix, 4)
 # save_scoring_matrix("real_all.csv")
+save_scoring_matrix("real_80percent.csv")
